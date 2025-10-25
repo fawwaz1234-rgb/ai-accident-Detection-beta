@@ -1,0 +1,39 @@
+# Core Flask dependencies
+flask>=2.3.0
+flask-cors>=4.0.0
+flask-jwt-extended>=4.5.0
+
+# Computer Vision and AI
+opencv-python>=4.8.0
+ultralytics>=8.0.0
+numpy>=1.21.0
+pillow>=9.0.0
+
+# Optional: TensorFlow (can be heavy, install only if needed)
+# tensorflow>=2.10.0
+
+# HTTP and API
+requests>=2.28.0
+
+# Database
+pymongo>=4.0.0
+firebase-admin>=6.0.0
+
+# Authentication and Security
+bcrypt>=4.0.0
+python-dotenv>=1.0.0
+
+# Location Services
+geopy>=2.3.0
+
+# Optional: Web interface (if you want Streamlit)
+# streamlit>=1.28.0
+# streamlit-webrtc>=0.47.0
+# av>=10.0.0
+
+# Optional: Maps
+# folium>=0.14.0
+
+# Optional: SMS (install only if you have Twilio account)
+# twilio>=8.0.0
+

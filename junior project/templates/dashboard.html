@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AI Accident Detection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-white mb-4">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-video fa-3x text-primary mb-3"></i>
+                <h5>Live Camera</h5>
+                <p class="text-muted">Real-time accident detection</p>
+                <a href="/camera_feed" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Start Monitoring
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h5>Accidents Detected</h5>
+                <h3 id="accidentCount" class="text-warning">0</h3>
+                <p class="text-muted">Total incidents today</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-map-marker-alt fa-3x text-success mb-3"></i>
+                <h5>Current Location</h5>
+                <p id="currentLocation" class="text-muted">Loading...</p>
+                <button class="btn btn-outline-success btn-sm" onclick="updateLocation()">
+                    <i class="fas fa-sync"></i> Update
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-bell fa-3x text-danger mb-3"></i>
+                <h5>Alerts Sent</h5>
+                <h3 id="alertCount" class="text-danger">0</h3>
+                <p class="text-muted">Emergency notifications</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> Recent Accidents</h5>
+            </div>
+            <div class="card-body">
+                <div id="accidentsList" class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Location</th>
+                                <th>Confidence</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accidentsTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog"></i> System Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Camera Status</span>
+                        <span class="badge bg-success" id="cameraStatus">Active</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Detection Model</span>
+                        <span class="badge bg-success" id="modelStatus">Loaded</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Alert System</span>
+                        <span class="badge bg-success" id="alertStatus">Ready</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>GPS Tracking</span>
+                        <span class="badge bg-success" id="gpsStatus">Connected</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6>Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="testDetection()">
+                        <i class="fas fa-test-tube"></i> Test Detection
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="sendTestAlert()">
+                        <i class="fas fa-bell"></i> Test Alert
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Accident Detected!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Location:</strong> <span id="alertLocation"></span></p>
+                <p><strong>Confidence:</strong> <span id="alertConfidence"></span></p>
+                <p><strong>Vehicles Detected:</strong> <span id="alertVehicles"></span></p>
+                <p><strong>Time:</strong> <span id="alertTime"></span></p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Emergency services have been automatically notified.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" onclick="viewLocation()">
+                    <i class="fas fa-map"></i> View on Map
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let accidentCount = 0;
+let alertCount = 0;
+
+// Check authentication
+if (!getAuthToken()) {
+    window.location.href = '/login';
+}
+
+// Load dashboard data
+loadDashboardData();
+
+// Update location
+updateLocation();
+
+// Load accidents
+loadAccidents();
+
+// Auto-refresh every 30 seconds
+setInterval(loadDashboardData, 30000);
+
+async function loadDashboardData() {
+    try {
+        const response = await fetch('/accidents', {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            accidentCount = data.accidents.length;
+            alertCount = data.accidents.filter(acc => acc.status === 'alert_sent').length;
+            
+            document.getElementById('accidentCount').textContent = accidentCount;
+            document.getElementById('alertCount').textContent = alertCount;
+        }
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+    }
+}
+
+async function loadAccidents() {
+    try {
+        const response = await fetch('/accidents', {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayAccidents(data.accidents);
+        }
+    } catch (error) {
+        console.error('Error loading accidents:', error);
+    }
+}
+
+function displayAccidents(accidents) {
+    const tbody = document.getElementById('accidentsTableBody');
+    
+    if (accidents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No accidents recorded</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = accidents.slice(0, 10).map(accident => `
+        <tr>
+            <td>${new Date(accident.timestamp).toLocaleString()}</td>
+            <td>${accident.location || 'Unknown'}</td>
+            <td>
+                <span class="badge ${accident.confidence > 0.8 ? 'bg-danger' : accident.confidence > 0.6 ? 'bg-warning' : 'bg-info'}">
+                    ${(accident.confidence * 100).toFixed(1)}%
+                </span>
+            </td>
+            <td>
+                <span class="badge ${accident.status === 'alert_sent' ? 'bg-success' : 'bg-secondary'}">
+                    ${accident.status}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function updateLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                try {
+                    const response = await fetch('/update_location', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getAuthToken()}`
+                        },
+                        body: JSON.stringify({ lat, lng })
+                    });
+                    
+                    if (response.ok) {
+                        document.getElementById('currentLocation').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    }
+                } catch (error) {
+                    console.error('Error updating location:', error);
+                }
+            },
+            (error) => {
+                document.getElementById('currentLocation').textContent = 'Location unavailable';
+                console.error('Geolocation error:', error);
+            }
+        );
+    } else {
+        document.getElementById('currentLocation').textContent = 'Geolocation not supported';
+    }
+}
+
+function testDetection() {
+    alert('Test detection feature - would trigger camera and run detection algorithm');
+}
+
+function sendTestAlert() {
+    alert('Test alert sent to emergency services');
+}
+
+function viewLocation() {
+    alert('Opening location in map...');
+}
+
+// WebSocket connection for real-time updates
+const ws = new WebSocket('ws://localhost:5000/ws');
+ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    if (data.type === 'accident_detected') {
+        showAccidentAlert(data);
+    }
+};
+
+function showAccidentAlert(data) {
+    document.getElementById('alertLocation').textContent = data.location;
+    document.getElementById('alertConfidence').textContent = (data.confidence * 100).toFixed(1) + '%';
+    document.getElementById('alertVehicles').textContent = data.vehicles_detected;
+    document.getElementById('alertTime').textContent = new Date(data.timestamp).toLocaleString();
+    
+    const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+    modal.show();
+    
+    // Update counters
+    accidentCount++;
+    alertCount++;
+    document.getElementById('accidentCount').textContent = accidentCount;
+    document.getElementById('alertCount').textContent = alertCount;
+}
+</script>
+{% endblock %}
+
